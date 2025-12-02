@@ -13,11 +13,19 @@ function getPool() {
       throw new Error('DATABASE_URL environment variable is not set');
     }
     
+    console.log('🔗 Connection string length:', connectionString.length);
+    console.log('🔗 Connection string starts with:', connectionString.substring(0, 20));
+    
+    // Tạo pool với connection string đã trim
     pool = new Pool({
-      connectionString,
+      connectionString: connectionString.trim(),
       ssl: {
         rejectUnauthorized: false
-      }
+      },
+      // Thêm timeout và retry config
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 10
     });
     
     console.log('✅ PostgreSQL connection pool created');
