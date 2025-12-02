@@ -16,13 +16,18 @@ function getPool() {
     console.log('🔗 Connection string length:', connectionString.length);
     console.log('🔗 Connection string starts with:', connectionString.substring(0, 20));
     
-    // Tạo pool với connection string đã trim
+    // Parse connection string thủ công để tránh lỗi searchParams
+    const url = new URL(connectionString);
+    
     pool = new Pool({
-      connectionString: connectionString.trim(),
+      host: url.hostname,
+      port: url.port || 5432,
+      database: url.pathname.slice(1), // Remove leading /
+      user: url.username,
+      password: url.password,
       ssl: {
         rejectUnauthorized: false
       },
-      // Thêm timeout và retry config
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000,
       max: 10
