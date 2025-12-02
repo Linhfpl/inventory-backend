@@ -32,6 +32,7 @@ import baoCaoXuatKhoRouter from './dieu_hanh/bao_cao_xuat_kho.js';
 import phanQuyenRBACRouter from './dieu_hanh/phan_quyen_rbac.js';
 import authRouter from './dieu_hanh/auth.js';
 import phanLoaiNhapKhoRouter from './dieu_hanh/phan_loai_nhap_kho.js';
+import { getDb } from './ket_noi_sqlite.js';
 
 const app = express();
 
@@ -200,15 +201,31 @@ app.use('/api/phan-loai-nhap-kho', phanLoaiNhapKhoRouter);
 
 // Khởi động server
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log('==============================');
-  console.log('✅ Backend đã khởi động thành công!');
-  console.log(`🌐 Truy cập: http://localhost:${PORT}`);
-  console.log('Các API chính:');
-  Object.entries(duongDan).forEach(([ten, duong]) => {
-    console.log(`  - ${ten}: http://localhost:${PORT}${duong}`);
-  });
-  console.log('==============================');
-});
+
+// Khởi tạo database schema trước khi start server
+async function initializeServer() {
+  try {
+    console.log('🔧 Initializing database...');
+    const db = await getDb();
+    console.log('✅ Database initialized successfully');
+    
+    app.listen(PORT, () => {
+      console.log('==============================');
+      console.log('✅ Backend đã khởi động thành công!');
+      console.log(`🌐 Truy cập: http://localhost:${PORT}`);
+      console.log('Các API chính:');
+      Object.entries(duongDan).forEach(([ten, duong]) => {
+        console.log(`  - ${ten}: http://localhost:${PORT}${duong}`);
+      });
+      console.log('==============================');
+    });
+  } catch (error) {
+    console.error('❌ Failed to initialize database:', error);
+    process.exit(1);
+  }
+}
+
+initializeServer();
 
 setInterval(() => {}, 1000 * 60 * 60);
+
