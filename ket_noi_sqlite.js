@@ -5,10 +5,30 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.resolve(__dirname, '../BD.db');
+// Prefer DATABASE_URL env (e.g. file:./data/database.sqlite?mode=rwc), fallback to local BD.db
+let dbPath = path.resolve(__dirname, '../BD.db');
+const envDb = process.env.DATABASE_URL || process.env.SQLITE_URL;
+if (envDb) {
+  // Support file: URLs and plain paths
+  if (envDb.startsWith('file:')) {
+    // Extract path after file:
+    const fileRelative = envDb.replace(/^file:/, '');
+    dbPath = path.resolve(__dirname, fileRelative);
+  } else {
+    dbPath = path.resolve(__dirname, envDb);
+  }
+}
+// Ensure parent directory exists (Railway ephemeral FS)
+try {
+  const parent = path.dirname(dbPath);
+  if (!fs.existsSync(parent)) {
+    fs.mkdirSync(parent, { recursive: true });
+  }
+} catch {}
 
 let indexesInitialized = false;
 let schemaInitialized = false;
