@@ -6,33 +6,37 @@ const { Pool } = pg;
 
 let pool = null;
 
+function normalizeConnectionString(raw) {
+  if (!raw) return raw;
+  // Một số provider dùng 'postgresql://', đổi về 'postgres://' cho pg
+  if (raw.startsWith('postgresql://')) {
+    const converted = 'postgres://' + raw.slice('postgresql://'.length);
+    console.log('🔁 Converted scheme postgresql:// -> postgres://');
+    return converted;
+  }
+  return raw;
+}
+
 function getPool() {
   if (!pool) {
-    const connectionString = process.env.DATABASE_URL;
+    let connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new Error('DATABASE_URL environment variable is not set');
     }
-    
-    console.log('🔗 Connection string length:', connectionString.length);
-    console.log('🔗 Connection string starts with:', connectionString.substring(0, 20));
-    
-    // Parse connection string thủ công để tránh lỗi searchParams
-    const url = new URL(connectionString);
-    
+    connectionString = connectionString.trim();
+    console.log('🔗 Original connection length:', connectionString.length);
+    console.log('🔗 Original connection starts:', connectionString.substring(0, 25));
+    connectionString = normalizeConnectionString(connectionString);
+    console.log('🔗 Final connection starts:', connectionString.substring(0, 25));
+
+    // Dùng trực tiếp connectionString để tránh lỗi parse
     pool = new Pool({
-      host: url.hostname,
-      port: url.port || 5432,
-      database: url.pathname.slice(1), // Remove leading /
-      user: url.username,
-      password: url.password,
-      ssl: {
-        rejectUnauthorized: false
-      },
+      connectionString,
+      ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000,
       max: 10
     });
-    
     console.log('✅ PostgreSQL connection pool created');
   }
   return pool;
