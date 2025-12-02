@@ -1,12 +1,22 @@
 // File: backend/ket_noi_sqlite.js
-// Mô tả: Kết nối tới file SQLite BD.db.sql
-
+// Mô tả: Kết nối tới database (SQLite local hoặc PostgreSQL cloud)
 
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+
+// Kiểm tra xem có dùng PostgreSQL không
+const usePostgres = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres');
+
+if (usePostgres) {
+  console.log('🐘 Using PostgreSQL database');
+  // Import PostgreSQL connector dynamically
+  const { getDb: getPostgresDb } = await import('./ket_noi_postgres.js');
+  export { getPostgresDb as getDb };
+} else {
+  console.log('📦 Using SQLite database');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Prefer DATABASE_URL env (e.g. file:./data/database.sqlite?mode=rwc), fallback to local BD.db
@@ -221,26 +231,27 @@ async function ensureIndexes(db) {
   indexesInitialized = true;
 }
 
-export async function getDb() {
-  const db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database
-  });
-  await db.exec('PRAGMA foreign_keys = ON;');
-  try {
-    await ensureSchema(db);
-  } catch (err) {
-    if (!err?.message?.includes('no such table')) {
-      throw err;
+  export async function getDb() {
+    const db = await open({
+      filename: dbPath,
+      driver: sqlite3.Database
+    });
+    await db.exec('PRAGMA foreign_keys = ON;');
+    try {
+      await ensureSchema(db);
+    } catch (err) {
+      if (!err?.message?.includes('no such table')) {
+        throw err;
+      }
     }
-  }
-  try {
-    await ensureIndexes(db);
-  } catch (err) {
-    // Nếu không thể tạo index (ví dụ bảng chưa tồn tại), bỏ qua và tiếp tục
-    if (!err?.message?.includes('no such table')) {
-      throw err;
+    try {
+      await ensureIndexes(db);
+    } catch (err) {
+      // Nếu không thể tạo index (ví dụ bảng chưa tồn tại), bỏ qua và tiếp tục
+      if (!err?.message?.includes('no such table')) {
+        throw err;
+      }
     }
+    return db;
   }
-  return db;
 }
