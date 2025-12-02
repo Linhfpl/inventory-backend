@@ -10,11 +10,13 @@ import { fileURLToPath } from 'url';
 // Kiểm tra xem có dùng PostgreSQL không
 const usePostgres = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres');
 
+let getDbFunction;
+
 if (usePostgres) {
   console.log('🐘 Using PostgreSQL database');
   // Import PostgreSQL connector dynamically
-  const { getDb: getPostgresDb } = await import('./ket_noi_postgres.js');
-  export { getPostgresDb as getDb };
+  const pgModule = await import('./ket_noi_postgres.js');
+  getDbFunction = pgModule.getDb;
 } else {
   console.log('📦 Using SQLite database');
 
@@ -231,7 +233,7 @@ async function ensureIndexes(db) {
   indexesInitialized = true;
 }
 
-  export async function getDb() {
+  getDbFunction = async function() {
     const db = await open({
       filename: dbPath,
       driver: sqlite3.Database
@@ -253,5 +255,10 @@ async function ensureIndexes(db) {
       }
     }
     return db;
-  }
+  };
+}
+
+// Export the getDb function
+export async function getDb() {
+  return getDbFunction();
 }

@@ -57,11 +57,11 @@ export async function getDb() {
 
 async function initSchema(pool) {
   try {
-    // Kiểm tra xem bảng KHO đã tồn tại chưa
+    // Kiểm tra xem bảng KHO đã tồn tại chưa (case-sensitive)
     const tableCheck = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
-        WHERE table_name = 'kho'
+        WHERE table_schema = 'public' AND table_name = 'KHO'
       );
     `);
     
@@ -72,9 +72,9 @@ async function initSchema(pool) {
     
     console.log('🔧 Initializing database schema...');
     
-    // Tạo bảng KHO
+    // Tạo bảng KHO (không dùng quotes để tránh case-sensitive)
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS KHO (
+      CREATE TABLE IF NOT EXISTS "KHO" (
         "ID" SERIAL PRIMARY KEY,
         "STT" INTEGER,
         "Vendor_code" VARCHAR(512),
