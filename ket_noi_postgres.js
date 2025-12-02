@@ -8,36 +8,60 @@ let pool = null;
 
 function normalizeConnectionString(raw) {
   if (!raw) return raw;
-  // Một số provider dùng 'postgresql://', đổi về 'postgres://' cho pg
-  if (raw.startsWith('postgresql://')) {
-    const converted = 'postgres://' + raw.slice('postgresql://'.length);
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('postgresql://')) {
+    const converted = 'postgres://' + trimmed.slice('postgresql://'.length);
     console.log('🔁 Converted scheme postgresql:// -> postgres://');
     return converted;
   }
-  return raw;
+  return trimmed;
+}
+
+function logCharCodes(label, str) {
+  try {
+    const codes = Array.from(str).map(ch => ch.charCodeAt(0));
+    console.log(`${label} char codes:`, codes.join(','));
+  } catch (e) {
+    console.log('⚠️ Failed to log char codes', e);
+  }
 }
 
 function getPool() {
   if (!pool) {
-    let connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('DATABASE_URL environment variable is not set');
-    }
-    connectionString = connectionString.trim();
-    console.log('🔗 Original connection length:', connectionString.length);
-    console.log('🔗 Original connection starts:', connectionString.substring(0, 25));
-    connectionString = normalizeConnectionString(connectionString);
-    console.log('🔗 Final connection starts:', connectionString.substring(0, 25));
+    let raw = process.env.DATABASE_URL;
+    if (!raw) throw new Error('DATABASE_URL environment variable is not set');
+    console.log('🔗 Raw env length:', raw.length);
+    console.log('🔗 Raw starts:', raw.substring(0, 40));
+    logCharCodes('RAW', raw.substring(0, 60));
+    const connectionString = normalizeConnectionString(raw);
+    console.log('🔗 Normalized length:', connectionString.length);
+    console.log('🔗 Normalized starts:', connectionString.substring(0, 40));
+    logCharCodes('NORM', connectionString.substring(0, 60));
 
-    // Dùng trực tiếp connectionString để tránh lỗi parse
+    // Manual parse after normalization
+    let url;
+    try {
+      url = new URL(connectionString);
+    } catch (e) {
+      console.error('❌ URL parse failed:', e, 'value:', connectionString);
+      throw e;
+    }
+    console.log('🔍 Parsed host:', url.hostname, 'database path:', url.pathname);
+    console.log('🔍 Parsed user:', url.username, 'password length:', url.password.length);
+
     pool = new Pool({
-      connectionString,
+      host: url.hostname,
+      port: url.port ? Number(url.port) : 5432,
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      database: url.pathname.slice(1),
       ssl: { rejectUnauthorized: false },
+      application_name: 'inventory-backend',
+      max: 10,
       connectionTimeoutMillis: 10000,
-      idleTimeoutMillis: 30000,
-      max: 10
+      idleTimeoutMillis: 30000
     });
-    console.log('✅ PostgreSQL connection pool created');
+    console.log('✅ PostgreSQL pool created (manual config)');
   }
   return pool;
 }
