@@ -53,16 +53,28 @@ function getPool() {
     console.log('🔗 Normalized starts:', connectionString.substring(0, 40));
     logCharCodes('NORM', connectionString.substring(0, 60));
 
-    // Use connectionString directly with pg.Pool to support query params
+    // Parse URL manually to extract config; avoid pg-connection-string parse errors
+    let url;
+    try {
+      url = new URL(connectionString);
+    } catch (e) {
+      console.error('❌ URL parse failed:', e);
+      throw e;
+    }
+
     pool = new Pool({
-      connectionString,
+      host: url.hostname,
+      port: url.port ? Number(url.port) : 5432,
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      database: url.pathname.slice(1),
       ssl: { rejectUnauthorized: false },
       application_name: 'inventory-backend',
       max: 10,
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000
     });
-    console.log('✅ PostgreSQL pool created (connectionString mode)');
+    console.log('✅ PostgreSQL pool created (manual config)');
   }
   return pool;
 }
