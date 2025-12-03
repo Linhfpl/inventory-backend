@@ -65,7 +65,7 @@ function getPool() {
     console.log('🔗 Clean URL starts:', clean.substring(0, 40));
 
     // Manual regex parse to handle special chars in password
-    const match = clean.match(/^postgres:\/\/([^:]+):([^@]+)@([^:/]+):?(\d+)?\/(.+)$/);
+    const match = clean.match(/^postgres:\/\/([^:]+):([^@]+)@([^:/]+)(?::(\d+))?\/(.+)$/);
     if (!match) {
       console.error('❌ Regex parse failed for:', clean);
       throw new Error('Invalid DATABASE_URL format');
