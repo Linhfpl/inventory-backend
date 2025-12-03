@@ -16,6 +16,13 @@ function getPool() {
       connectionString = connectionString.replace('postgresql://', 'postgres://');
     }
     
+    // Strip query params that pg-connection-string can't handle
+    const qIndex = connectionString.indexOf('?');
+    if (qIndex > 0) {
+      connectionString = connectionString.substring(0, qIndex);
+      console.log('🧹 Stripped query params from DATABASE_URL');
+    }
+    
     console.log('🔗 Creating PostgreSQL pool...');
     
     pool = new Pool({
