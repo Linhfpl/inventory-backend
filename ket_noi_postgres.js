@@ -65,10 +65,40 @@ function getPool() {
     console.log('🔗 Clean URL starts:', clean.substring(0, 40));
 
     // Manual regex parse to handle special chars in password
-    const match = clean.match(/^postgres:\/\/([^:]+):([^@]+)@([^:/]+)(?::(\d+))?\/(.+)$/);
+    // Format: postgres://user:pass@host:port/db or postgres://user:pass@host/db
+    const match = clean.match(/^postgres:\/\/([^:]+):([^@]+)@([^:/]+)(?::(\d+))?\/([\w]+)$/);
     if (!match) {
       console.error('❌ Regex parse failed for:', clean);
-      throw new Error('Invalid DATABASE_URL format');
+      // Try simpler split-based parse as fallback
+      try {
+        const withoutScheme = clean.replace(/^postgres:\/\//, '');
+        const [auth, hostAndDb] = withoutScheme.split('@');
+        const [user, password] = auth.split(':');
+        const lastSlash = hostAndDb.lastIndexOf('/');
+        const hostPart = hostAndDb.substring(0, lastSlash);
+        const database = hostAndDb.substring(lastSlash + 1);
+        const [host, port] = hostPart.includes(':') ? hostPart.split(':') : [hostPart, '5432'];
+        
+        console.log('✅ Fallback parsed: user=', user, 'host=', host, 'port=', port, 'db=', database);
+        
+        pool = new Pool({
+          host,
+          port: Number(port),
+          user,
+          password,
+          database,
+          ssl: { rejectUnauthorized: false },
+          application_name: 'inventory-backend',
+          max: 10,
+          connectionTimeoutMillis: 10000,
+          idleTimeoutMillis: 30000
+        });
+        console.log('✅ PostgreSQL pool created (fallback parse)');
+        return pool;
+      } catch (e2) {
+        console.error('❌ Fallback parse also failed:', e2);
+        throw new Error('Invalid DATABASE_URL format');
+      }
     }
     
     const [, user, password, host, port, database] = match;
