@@ -11,22 +11,47 @@ function getPool() {
     let connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error('DATABASE_URL environment variable is not set');
     
-    // Normalize postgresql:// to postgres:// if needed
+    // Normalize and strip query params
     if (connectionString.startsWith('postgresql://')) {
       connectionString = connectionString.replace('postgresql://', 'postgres://');
     }
-    
-    // Strip query params that pg-connection-string can't handle
     const qIndex = connectionString.indexOf('?');
     if (qIndex > 0) {
       connectionString = connectionString.substring(0, qIndex);
-      console.log('🧹 Stripped query params from DATABASE_URL');
     }
     
-    console.log('🔗 Creating PostgreSQL pool...');
+    console.log('🔗 Parsing connection string manually...');
+    
+    // Manual parse using indexOf/substring (most reliable)
+    const withoutScheme = connectionString.replace(/^postgres:\/\//, '');
+    const atIndex = withoutScheme.indexOf('@');
+    const auth = withoutScheme.substring(0, atIndex);
+    const hostAndDb = withoutScheme.substring(atIndex + 1);
+    
+    const colonIndex = auth.indexOf(':');
+    const user = auth.substring(0, colonIndex);
+    const password = auth.substring(colonIndex + 1);
+    
+    const slashIndex = hostAndDb.indexOf('/');
+    const hostPart = hostAndDb.substring(0, slashIndex);
+    const database = hostAndDb.substring(slashIndex + 1);
+    
+    let host = hostPart;
+    let port = 5432;
+    const portColonIndex = hostPart.lastIndexOf(':');
+    if (portColonIndex > 0) {
+      host = hostPart.substring(0, portColonIndex);
+      port = Number(hostPart.substring(portColonIndex + 1)) || 5432;
+    }
+    
+    console.log('✅ Parsed config: host=', host, 'port=', port, 'db=', database);
     
     pool = new Pool({
-      connectionString,
+      host,
+      port,
+      user,
+      password,
+      database,
       ssl: {
         rejectUnauthorized: false
       }
