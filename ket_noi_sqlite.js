@@ -10,33 +10,11 @@ import { fileURLToPath } from 'url';
 // Kiểm tra xem có dùng PostgreSQL không
 const usePostgres = process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres');
 
-let getDbFunction;
-
-if (usePostgres) {
-  console.log('🐘 Using PostgreSQL database');
-  // Import PostgreSQL connector dynamically
-  const pgModule = await import('./ket_noi_postgres.js');
-  getDbFunction = async () => {
-    const pgDb = await pgModule.getDb();
-    // If Postgres returns null (no DATABASE_URL), fall back to SQLite
-    if (!pgDb) {
-      console.log('📦 Postgres returned null, falling back to SQLite');
-      return await getSqliteDb();
-    }
-    return pgDb;
-  };
-} else {
-  console.log('📦 Using SQLite database');
-  getDbFunction = getSqliteDb;
-}
-
-async function getSqliteDb() {
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Prefer DATABASE_URL env (e.g. file:./data/database.sqlite?mode=rwc), fallback to local BD.db
 let dbPath = path.resolve(__dirname, '../BD.db');
 const envDb = process.env.DATABASE_URL || process.env.SQLITE_URL;
-if (envDb) {
+if (envDb && !envDb.startsWith('postgres')) {
   // Support file: URLs and plain paths
   if (envDb.startsWith('file:')) {
     // Extract path after file:
@@ -56,6 +34,8 @@ try {
 
 let indexesInitialized = false;
 let schemaInitialized = false;
+
+let getDbFunction;
 
 async function migrateBinViTriSchema(db) {
   await db.exec('PRAGMA foreign_keys = OFF;');
@@ -246,28 +226,45 @@ async function ensureIndexes(db) {
 }
 
 async function getSqliteDb() {
-    const db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
-    await db.exec('PRAGMA foreign_keys = ON;');
-    try {
-      await ensureSchema(db);
-    } catch (err) {
-      if (!err?.message?.includes('no such table')) {
-        throw err;
-      }
+  const db = await open({
+    filename: dbPath,
+    driver: sqlite3.Database
+  });
+  await db.exec('PRAGMA foreign_keys = ON;');
+  try {
+    await ensureSchema(db);
+  } catch (err) {
+    if (!err?.message?.includes('no such table')) {
+      throw err;
     }
-    try {
-      await ensureIndexes(db);
-    } catch (err) {
-      // Nếu không thể tạo index (ví dụ bảng chưa tồn tại), bỏ qua và tiếp tục
-      if (!err?.message?.includes('no such table')) {
-        throw err;
-      }
-    }
-    return db;
   }
+  try {
+    await ensureIndexes(db);
+  } catch (err) {
+    // Nếu không thể tạo index (ví dụ bảng chưa tồn tại), bỏ qua và tiếp tục
+    if (!err?.message?.includes('no such table')) {
+      throw err;
+    }
+  }
+  return db;
+}
+
+if (usePostgres) {
+  console.log('🐘 Using PostgreSQL database');
+  // Import PostgreSQL connector dynamically
+  const pgModule = await import('./ket_noi_postgres.js');
+  getDbFunction = async () => {
+    const pgDb = await pgModule.getDb();
+    // If Postgres returns null (no DATABASE_URL), fall back to SQLite
+    if (!pgDb) {
+      console.log('📦 Postgres returned null, falling back to SQLite');
+      return await getSqliteDb();
+    }
+    return pgDb;
+  };
+} else {
+  console.log('📦 Using SQLite database');
+  getDbFunction = getSqliteDb;
 }
 
 // Export the getDb function
