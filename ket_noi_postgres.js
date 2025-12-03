@@ -11,6 +11,8 @@ function getPool() {
     let connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error('DATABASE_URL environment variable is not set');
     
+    connectionString = connectionString.trim();
+    
     // Strip query params
     const qIndex = connectionString.indexOf('?');
     if (qIndex > 0) {
@@ -20,12 +22,20 @@ function getPool() {
     // Normalize scheme
     connectionString = connectionString.replace('postgresql://', 'postgres://');
     
-    // Parse: postgres://user:pass@host:port/db or postgres://user:pass@host/db
+    console.log('🔗 DATABASE_URL length:', connectionString.length);
+    console.log('🔗 Has @?', connectionString.includes('@'));
+    console.log('🔗 First 50 chars:', connectionString.substring(0, 50));
+    console.log('🔗 Last 50 chars:', connectionString.substring(connectionString.length - 50));
+    
+    // Parse: postgres://user:pass@host:port/db
     const schemeEnd = connectionString.indexOf('://') + 3;
     const rest = connectionString.substring(schemeEnd);
     
-    const atIndex = rest.lastIndexOf('@'); // Use lastIndexOf in case @ in password
-    if (atIndex === -1) throw new Error('Invalid DATABASE_URL: missing @');
+    const atIndex = rest.lastIndexOf('@');
+    if (atIndex === -1) {
+      console.error('❌ Full URL:', connectionString);
+      throw new Error('Invalid DATABASE_URL: missing @');
+    }
     
     const auth = rest.substring(0, atIndex);
     const hostAndDb = rest.substring(atIndex + 1);
