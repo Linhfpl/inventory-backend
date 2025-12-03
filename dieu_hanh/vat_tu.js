@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDb } from '../ket_noi_sqlite.js';
+import { getDb } from '../ket_noi_postgres.js';
 import axios from 'axios';
 const router = express.Router();
 
@@ -703,36 +703,62 @@ router.put('/:ss_code/:vendor_code', async (req, res) => {
     });
     const db = await getDb();
     const { ss_code, vendor_code } = req.params;
+    
+    // Map uppercase field names to lowercase for PostgreSQL
+    const fieldMap = {
+      'SS_Code': 'ss_code',
+      'Vendor_code': 'vendor_code',
+      'Hinh_anh': 'hinh_anh',
+      'Trung': 'trung',
+      'Item': 'item',
+      'Type_Item': 'type_item',
+      'Model': 'model',
+      'Don_vi': 'don_vi',
+      'Kho_OK': 'kho_ok',
+      'Ton_Line': 'ton_line',
+      'Ton_C_Tien': 'ton_c_tien',
+      'Ton_Muon': 'ton_muon',
+      'Kho_NG': 'kho_ng',
+      'Tong_ton': 'tong_ton',
+      'Ton_Cho_Kiem': 'ton_cho_kiem',
+      'Min_Stock': 'min_stock',
+      'Max_Stock': 'max_stock'
+    };
+    
     // Lọc bỏ SS_Code, Vendor_code và Tong_ton (sẽ tính lại tự động)
     const keys = Object.keys(req.body).filter(k => k !== 'SS_Code' && k !== 'Vendor_code' && k !== 'Tong_ton');
     if (keys.length === 0) return res.status(400).json({ error: 'Không có trường nào để cập nhật' });
+    
+    // Convert to lowercase field names
+    const dbKeys = keys.map(k => fieldMap[k] || k.toLowerCase());
+    
     // Nếu có cập nhật Kho_OK, Ton_Line, Kho_NG thì tính lại tổng tồn
-    let setClause = keys.map(k => `${k} = ?`).join(', ');
+    let setClause = dbKeys.map(k => `${k} = $${dbKeys.indexOf(k) + 1}`).join(', ');
     let values = keys.map(k => req.body[k]);
     let updateTongTon = false;
     let Kho_OK, Ton_Line, Kho_NG;
     if (keys.includes('Kho_OK') || keys.includes('Ton_Line') || keys.includes('Kho_NG')) {
       // Lấy lại giá trị mới hoặc cũ
-      const row = await db.get('SELECT * FROM KHO WHERE SS_Code = ? AND Vendor_code = ?', [ss_code, vendor_code]);
-      Kho_OK = keys.includes('Kho_OK') ? Number(req.body.Kho_OK) : Number(row.Kho_OK) || 0;
-      Ton_Line = keys.includes('Ton_Line') ? Number(req.body.Ton_Line) : Number(row.Ton_Line) || 0;
-      Kho_NG = keys.includes('Kho_NG') ? Number(req.body.Kho_NG) : Number(row.Kho_NG) || 0;
+      const row = await db.get('SELECT * FROM kho WHERE ss_code = $1 AND vendor_code = $2', [ss_code, vendor_code]);
+      Kho_OK = keys.includes('Kho_OK') ? Number(req.body.Kho_OK) : Number(row.kho_ok) || 0;
+      Ton_Line = keys.includes('Ton_Line') ? Number(req.body.Ton_Line) : Number(row.ton_line) || 0;
+      Kho_NG = keys.includes('Kho_NG') ? Number(req.body.Kho_NG) : Number(row.kho_ng) || 0;
       let Tong_ton = Kho_OK + Ton_Line + Kho_NG;
-      setClause += ', Tong_ton = ?';
+      setClause += `, tong_ton = $${values.length + 1}`;
       values.push(Tong_ton);
       updateTongTon = true;
     }
     values.push(ss_code, vendor_code);
-    const sql = `UPDATE KHO SET ${setClause} WHERE SS_Code = ? AND Vendor_code = ?`;
+    const sql = `UPDATE kho SET ${setClause} WHERE ss_code = $${values.length - 1} AND vendor_code = $${values.length}`;
     console.log('SQL:', sql);
     console.log('Values:', values);
     const result = await db.run(sql, values);
     if (result.changes === 0) return res.status(404).json({ error: 'Không tìm thấy vật tư để cập nhật' });
-    // Ghi log nếu bảng LOG_NGHIEP_VU tồn tại, nếu không thì bỏ qua
+    // Ghi log nếu bảng log_nghiep_vu tồn tại, nếu không thì bỏ qua
     try {
-      await db.run('INSERT INTO LOG_NGHIEP_VU (Loai, NoiDung, ThoiGian) VALUES (?, ?, CURRENT_TIMESTAMP)', ['KHO', `Cập nhật vật tư: ${ss_code}`]);
+      await db.run('INSERT INTO log_nghiep_vu (loai, noidung, thoigian) VALUES ($1, $2, CURRENT_TIMESTAMP)', ['KHO', `Cập nhật vật tư: ${ss_code}`]);
     } catch (e) {
-      if (e && e.message && e.message.includes('no such table')) {
+      if (e && e.message && e.message.includes('does not exist')) {
         // Bỏ qua nếu không có bảng log
       } else {
         throw e;
@@ -743,9 +769,9 @@ router.put('/:ss_code/:vendor_code', async (req, res) => {
     console.error('Lỗi PUT /api/vat-tu/:ss_code/:vendor_code', err);
     try {
       const db = await getDb();
-      await db.run('INSERT INTO LOG_NGHIEP_VU (Loai, NoiDung, ThoiGian) VALUES (?, ?, CURRENT_TIMESTAMP)', ['KHO', `Lỗi cập nhật vật tư: ${err.message}`]);
+      await db.run('INSERT INTO log_nghiep_vu (loai, noidung, thoigian) VALUES ($1, $2, CURRENT_TIMESTAMP)', ['KHO', `Lỗi cập nhật vật tư: ${err.message}`]);
     } catch (e) {
-      if (e && e.message && e.message.includes('no such table')) {
+      if (e && e.message && e.message.includes('does not exist')) {
         // Bỏ qua nếu không có bảng log
       }
     }

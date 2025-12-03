@@ -150,12 +150,12 @@ async function initSchema(pool) {
         ton_c_tien VARCHAR(512),
         ton_muon VARCHAR(512),
         kho_ng VARCHAR(512),
-        tong_ton INTEGER,
+        tong_ton NUMERIC,
         nguoi_cap_nhat_cuoi VARCHAR(512),
         thoi_gian_cap_nhat_cuoi TIMESTAMP,
-        ton_cho_kiem INTEGER DEFAULT 0,
-        min_stock INTEGER DEFAULT 0,
-        max_stock INTEGER DEFAULT 0
+        ton_cho_kiem NUMERIC DEFAULT 0,
+        min_stock NUMERIC DEFAULT 0,
+        max_stock NUMERIC DEFAULT 0
       );
     `);
     
@@ -171,14 +171,14 @@ async function initSchema(pool) {
         item VARCHAR(512),
         model VARCHAR(512),
         type_item VARCHAR(512),
-        ok INTEGER,
-        ng INTEGER,
-        stock INTEGER,
+        ok NUMERIC,
+        ng NUMERIC,
+        stock NUMERIC,
         don_vi VARCHAR(512),
         trang_thai_bin VARCHAR(32) DEFAULT 'Empty',
         layout VARCHAR(50),
         bin_code VARCHAR(150),
-        capacity INTEGER
+        capacity NUMERIC
       );
     `);
     
@@ -190,7 +190,7 @@ async function initSchema(pool) {
         mavattu VARCHAR(100),
         mancc VARCHAR(100),
         tenvattu VARCHAR(255),
-        soluong INTEGER,
+        soluong NUMERIC,
         vitri VARCHAR(100),
         nguoithuchien VARCHAR(100),
         khuvucnhan VARCHAR(100),
@@ -208,7 +208,7 @@ async function initSchema(pool) {
         mavattu VARCHAR(100),
         mancc VARCHAR(100),
         tenvattu VARCHAR(255),
-        soluong INTEGER,
+        soluong NUMERIC,
         nguoithuchien VARCHAR(100),
         ngaygiaodich TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         loaigiaodich VARCHAR(50),

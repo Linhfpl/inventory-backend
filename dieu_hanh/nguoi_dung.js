@@ -1,7 +1,7 @@
 // File: dieu_hanh/nguoi_dung.js
 // API CRUD cho bảng NguoiDung và Roles
 import express from 'express';
-import { getDb } from '../ket_noi_sqlite.js';
+import { getDb } from '../ket_noi_postgres.js';
 const router = express.Router();
 
 // Lấy danh sách người dùng

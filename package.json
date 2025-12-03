@@ -8,16 +8,17 @@
     "dev": "node server.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
-    "cors": "^2.8.5",
-    "body-parser": "^2.2.1",
-    "sqlite3": "^5.1.7",
-    "sqlite": "^5.1.1",
-    "pg": "^8.11.3",
     "axios": "^1.13.2",
-    "multer": "^2.0.2",
-    "sharp": "^0.33.5",
+    "body-parser": "^2.2.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "pg": "^8.11.3",
+    "sharp": "^0.33.5",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
     "xlsx": "^0.18.5"
   },
   "engines": {

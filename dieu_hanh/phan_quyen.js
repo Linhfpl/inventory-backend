@@ -10,7 +10,7 @@ let dsPhanQuyen = [];
 // API: Lấy danh sách người dùng
 router.get('/', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_sqlite.js');
+    const { getDb } = await import('../ket_noi_postgres.js');
     const db = await getDb();
     const rows = await db.all('SELECT * FROM USERS');
     // Map lại tên trường cho frontend
@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
 // API: Thêm mới người dùng
 router.post('/', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_sqlite.js');
+    const { getDb } = await import('../ket_noi_postgres.js');
     const db = await getDb();
     const keys = Object.keys(req.body);
     const values = keys.map(k => req.body[k]);

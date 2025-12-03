@@ -35,7 +35,7 @@ router.post('/', checkRBAC, async (req, res) => {
   let db;
   let transactionStarted = false;
   try {
-    const { getDb } = await import('../ket_noi_sqlite.js');
+    const { getDb } = await import('../ket_noi_postgres.js');
     db = await getDb();
     const quantity = Number(so_luong) || 0;
     if (quantity <= 0) {

@@ -1,7 +1,7 @@
 // File: dieu_hanh/bao_cao_xuat_kho.js
 // API báo cáo xuất kho, lọc theo ngày/tuần/tháng, xuất Excel
 import express from 'express';
-import { getDb } from '../ket_noi_sqlite.js';
+import { getDb } from '../ket_noi_postgres.js';
 import ExcelJS from 'exceljs';
 const router = express.Router();
 

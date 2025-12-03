@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDb } from '../ket_noi_sqlite.js';
+import { getDb } from '../ket_noi_postgres.js';
 const router = express.Router();
 
 const BIN_DECISION_SEPARATOR = '::';

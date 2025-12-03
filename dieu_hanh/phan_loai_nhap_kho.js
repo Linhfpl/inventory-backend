@@ -7,7 +7,7 @@
 import express from 'express';
 import multer from 'multer';
 import xlsx from 'xlsx';
-import { getDb } from '../ket_noi_sqlite.js';
+import { getDb } from '../ket_noi_postgres.js';
 
 const router = express.Router();
 

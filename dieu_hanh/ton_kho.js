@@ -10,7 +10,7 @@ let dsTonKho = [];
 // API: Lấy danh sách tồn kho
 router.get('/', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_sqlite.js');
+    const { getDb } = await import('../ket_noi_postgres.js');
     const db = await getDb();
     const rows = await db.all('SELECT * FROM KHO');
     res.json(rows);
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 // API: Thêm mới tồn kho
 router.post('/', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_sqlite.js');
+    const { getDb } = await import('../ket_noi_postgres.js');
     const db = await getDb();
     const keys = Object.keys(req.body);
     const values = keys.map(k => req.body[k]);
