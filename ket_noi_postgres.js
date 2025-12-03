@@ -2,121 +2,31 @@
 // Mô tả: Kết nối tới PostgreSQL (Supabase)
 
 import pg from 'pg';
+import { parse } from 'pg-connection-string';
 const { Pool } = pg;
 
 let pool = null;
 
-function normalizeConnectionString(raw) {
-  if (!raw) return raw;
-  const trimmed = raw.trim();
-  if (trimmed.startsWith('postgresql://')) {
-    const converted = 'postgres://' + trimmed.slice('postgresql://'.length);
-    console.log('🔁 Converted scheme postgresql:// -> postgres://');
-    // Strip problematic query params Neon/Render may append
-    return sanitizeParams(converted);
-  }
-  return sanitizeParams(trimmed);
-}
-
-function sanitizeParams(str) {
-  try {
-    // Remove channel_binding and sslmode params which pg may not expect
-    let out = str.replace(/([?&])channel_binding=[^&]*/g, '$1')
-                 .replace(/([?&])sslmode=[^&]*/g, '$1');
-    // Cleanup trailing '?' or '&' or '?&'
-    out = out.replace(/\?&/, '?');
-    out = out.replace(/[?&]$/, '');
-    return out;
-  } catch {
-    return str;
-  }
-}
-
-function logCharCodes(label, str) {
-  try {
-    const codes = Array.from(str).map(ch => ch.charCodeAt(0));
-    console.log(`${label} char codes:`, codes.join(','));
-  } catch (e) {
-    console.log('⚠️ Failed to log char codes', e);
-  }
-}
-
 function getPool() {
   if (!pool) {
-    const raw = process.env.DATABASE_URL;
-    if (!raw) throw new Error('DATABASE_URL environment variable is not set');
-    console.log('🔗 Raw env length:', raw.length);
-    console.log('🔗 Raw starts:', raw.substring(0, 40));
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) throw new Error('DATABASE_URL environment variable is not set');
     
-    // Strip all query params and normalize scheme
-    let clean = raw.trim();
-    if (clean.startsWith('postgresql://')) {
-      clean = 'postgres://' + clean.slice('postgresql://'.length);
-      console.log('🔁 Converted scheme postgresql:// -> postgres://');
-    }
-    // Remove everything after '?' to strip query params
-    const qIndex = clean.indexOf('?');
-    if (qIndex > 0) {
-      clean = clean.substring(0, qIndex);
-      console.log('🧹 Stripped query params');
-    }
+    console.log('🔗 Parsing DATABASE_URL...');
     
-    console.log('🔗 Clean URL length:', clean.length);
-    console.log('🔗 Clean URL starts:', clean.substring(0, 40));
-
-    // Manual regex parse to handle special chars in password
-    // Format: postgres://user:pass@host:port/db or postgres://user:pass@host/db
-    const match = clean.match(/^postgres:\/\/([^:]+):([^@]+)@([^:/]+)(?::(\d+))?\/([\w]+)$/);
-    if (!match) {
-      console.error('❌ Regex parse failed for:', clean);
-      // Try simpler split-based parse as fallback
-      try {
-        const withoutScheme = clean.replace(/^postgres:\/\//, '');
-        const [auth, hostAndDb] = withoutScheme.split('@');
-        const [user, password] = auth.split(':');
-        const lastSlash = hostAndDb.lastIndexOf('/');
-        const hostPart = hostAndDb.substring(0, lastSlash);
-        const database = hostAndDb.substring(lastSlash + 1);
-        const [host, port] = hostPart.includes(':') ? hostPart.split(':') : [hostPart, '5432'];
-        
-        console.log('✅ Fallback parsed: user=', user, 'host=', host, 'port=', port, 'db=', database);
-        
-        pool = new Pool({
-          host,
-          port: Number(port),
-          user,
-          password,
-          database,
-          ssl: { rejectUnauthorized: false },
-          application_name: 'inventory-backend',
-          max: 10,
-          connectionTimeoutMillis: 10000,
-          idleTimeoutMillis: 30000
-        });
-        console.log('✅ PostgreSQL pool created (fallback parse)');
-        return pool;
-      } catch (e2) {
-        console.error('❌ Fallback parse also failed:', e2);
-        throw new Error('Invalid DATABASE_URL format');
-      }
-    }
+    // Use pg-connection-string to parse (handles all Postgres URL variants)
+    const config = parse(connectionString);
     
-    const [, user, password, host, port, database] = match;
-    console.log('✅ Parsed: user=', user, 'host=', host, 'port=', port || 5432, 'db=', database);
-
     pool = new Pool({
-      host,
-      port: port ? Number(port) : 5432,
-      user,
-      password,
-      database,
-      ssl: { rejectUnauthorized: false },
+      ...config,
+      ssl: config.ssl || { rejectUnauthorized: false },
       application_name: 'inventory-backend',
       max: 10,
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000
     });
-    console.log('✅ PostgreSQL pool created (manual config)');
+    
+    console.log('✅ PostgreSQL pool created');
   }
   return pool;
 }
