@@ -64,21 +64,22 @@ function getPool() {
     console.log('🔗 Clean URL length:', clean.length);
     console.log('🔗 Clean URL starts:', clean.substring(0, 40));
 
-    // Parse URL manually to extract config
-    let url;
-    try {
-      url = new URL(clean);
-    } catch (e) {
-      console.error('❌ URL parse failed:', e, 'input:', clean);
-      throw e;
+    // Manual regex parse to handle special chars in password
+    const match = clean.match(/^postgres:\/\/([^:]+):([^@]+)@([^:/]+):?(\d+)?\/(.+)$/);
+    if (!match) {
+      console.error('❌ Regex parse failed for:', clean);
+      throw new Error('Invalid DATABASE_URL format');
     }
+    
+    const [, user, password, host, port, database] = match;
+    console.log('✅ Parsed: user=', user, 'host=', host, 'port=', port || 5432, 'db=', database);
 
     pool = new Pool({
-      host: url.hostname,
-      port: url.port ? Number(url.port) : 5432,
-      user: decodeURIComponent(url.username),
-      password: decodeURIComponent(url.password),
-      database: url.pathname.slice(1),
+      host,
+      port: port ? Number(port) : 5432,
+      user,
+      password,
+      database,
       ssl: { rejectUnauthorized: false },
       application_name: 'inventory-backend',
       max: 10,
