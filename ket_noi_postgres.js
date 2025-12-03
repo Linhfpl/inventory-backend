@@ -117,11 +117,19 @@ export async function getDb() {
 
 async function initSchema(pool) {
   try {
-    // Kiểm tra xem bảng KHO đã tồn tại chưa (case-sensitive)
+    console.log('🔧 Initializing database schema...');
+    
+    // Drop old uppercase tables if they exist (one-time migration)
+    await pool.query(`
+      DROP TABLE IF EXISTS "KHO", "BIN_VI_TRI", "GIAO_DICH_NHAP_KHO", "GIAO_DICH_XUAT_KHO", "LOG_NGHIEP_VU" CASCADE;
+    `);
+    console.log('🗑️ Dropped old uppercase tables');
+    
+    // Kiểm tra xem bảng kho đã tồn tại chưa (lowercase)
     const tableCheck = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_name = 'KHO'
+        WHERE table_schema = 'public' AND table_name = 'kho'
       );
     `);
     
@@ -130,109 +138,107 @@ async function initSchema(pool) {
       return;
     }
     
-    console.log('🔧 Initializing database schema...');
-    
-    // Tạo bảng KHO (không dùng quotes để tránh case-sensitive)
+    // Tạo bảng kho (lowercase, không dùng quotes)
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS "KHO" (
-        "ID" SERIAL PRIMARY KEY,
-        "STT" INTEGER,
-        "Vendor_code" VARCHAR(512),
-        "SS_Code" VARCHAR(512),
-        "Hinh_anh" VARCHAR(512),
-        "Trung" VARCHAR(512),
-        "Item" VARCHAR(512),
-        "Type_Item" VARCHAR(512),
-        "Model" VARCHAR(512),
-        "Don_vi" VARCHAR(512),
-        "Kho_OK" VARCHAR(512),
-        "Ton_Line" VARCHAR(512),
-        "Ton_C_Tien" VARCHAR(512),
-        "Ton_Muon" VARCHAR(512),
-        "Kho_NG" VARCHAR(512),
-        "Tong_ton" INTEGER,
-        "Nguoi_Cap_Nhat_Cuoi" VARCHAR(512),
-        "Thoi_Gian_Cap_Nhat_Cuoi" TIMESTAMP,
-        "Ton_Cho_Kiem" INTEGER DEFAULT 0,
-        "Min_Stock" INTEGER DEFAULT 0,
-        "Max_Stock" INTEGER DEFAULT 0
+      CREATE TABLE IF NOT EXISTS kho (
+        id SERIAL PRIMARY KEY,
+        stt INTEGER,
+        vendor_code VARCHAR(512),
+        ss_code VARCHAR(512),
+        hinh_anh VARCHAR(512),
+        trung VARCHAR(512),
+        item VARCHAR(512),
+        type_item VARCHAR(512),
+        model VARCHAR(512),
+        don_vi VARCHAR(512),
+        kho_ok VARCHAR(512),
+        ton_line VARCHAR(512),
+        ton_c_tien VARCHAR(512),
+        ton_muon VARCHAR(512),
+        kho_ng VARCHAR(512),
+        tong_ton INTEGER,
+        nguoi_cap_nhat_cuoi VARCHAR(512),
+        thoi_gian_cap_nhat_cuoi TIMESTAMP,
+        ton_cho_kiem INTEGER DEFAULT 0,
+        min_stock INTEGER DEFAULT 0,
+        max_stock INTEGER DEFAULT 0
       );
     `);
     
-    // Tạo bảng BIN_VI_TRI
+    // Tạo bảng bin_vi_tri
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS "BIN_VI_TRI" (
-        "ID" SERIAL PRIMARY KEY,
-        "STT" INTEGER,
-        "Rack" VARCHAR(512) NOT NULL,
-        "Bin" VARCHAR(512) NOT NULL,
-        "Vendor_code" VARCHAR(512),
-        "SS_code" VARCHAR(512),
-        "Item" VARCHAR(512),
-        "Model" VARCHAR(512),
-        "Type_Item" VARCHAR(512),
-        "OK" INTEGER,
-        "NG" INTEGER,
-        "Stock" INTEGER,
-        "Don_vi" VARCHAR(512),
-        "Trang_thai_Bin" VARCHAR(32) DEFAULT 'Empty',
-        "Layout" VARCHAR(50),
-        "Bin_Code" VARCHAR(150),
-        "Capacity" INTEGER
+      CREATE TABLE IF NOT EXISTS bin_vi_tri (
+        id SERIAL PRIMARY KEY,
+        stt INTEGER,
+        rack VARCHAR(512) NOT NULL,
+        bin VARCHAR(512) NOT NULL,
+        vendor_code VARCHAR(512),
+        ss_code VARCHAR(512),
+        item VARCHAR(512),
+        model VARCHAR(512),
+        type_item VARCHAR(512),
+        ok INTEGER,
+        ng INTEGER,
+        stock INTEGER,
+        don_vi VARCHAR(512),
+        trang_thai_bin VARCHAR(32) DEFAULT 'Empty',
+        layout VARCHAR(50),
+        bin_code VARCHAR(150),
+        capacity INTEGER
       );
     `);
     
-    // Tạo bảng GIAO_DICH_NHAP_KHO
+    // Tạo bảng giao_dich_nhap_kho
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS "GIAO_DICH_NHAP_KHO" (
-        "ID" SERIAL PRIMARY KEY,
-        "SoPhieu" VARCHAR(100),
-        "MaVatTu" VARCHAR(100),
-        "MaNCC" VARCHAR(100),
-        "TenVatTu" VARCHAR(255),
-        "SoLuong" INTEGER,
-        "ViTri" VARCHAR(100),
-        "NguoiThucHien" VARCHAR(100),
-        "KhuVucNhan" VARCHAR(100),
-        "NgayGiaoDich" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        "LoaiGiaoDich" VARCHAR(50),
-        "GhiChu" TEXT
+      CREATE TABLE IF NOT EXISTS giao_dich_nhap_kho (
+        id SERIAL PRIMARY KEY,
+        sophieu VARCHAR(100),
+        mavattu VARCHAR(100),
+        mancc VARCHAR(100),
+        tenvattu VARCHAR(255),
+        soluong INTEGER,
+        vitri VARCHAR(100),
+        nguoithuchien VARCHAR(100),
+        khuvucnhan VARCHAR(100),
+        ngaygiaodich TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        loaigiaodich VARCHAR(50),
+        ghichu TEXT
       );
     `);
     
-    // Tạo bảng GIAO_DICH_XUAT_KHO
+    // Tạo bảng giao_dich_xuat_kho
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS "GIAO_DICH_XUAT_KHO" (
-        "ID" SERIAL PRIMARY KEY,
-        "SoPhieu" VARCHAR(100),
-        "MaVatTu" VARCHAR(100),
-        "MaNCC" VARCHAR(100),
-        "TenVatTu" VARCHAR(255),
-        "SoLuong" INTEGER,
-        "NguoiThucHien" VARCHAR(100),
-        "NgayGiaoDich" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        "LoaiGiaoDich" VARCHAR(50),
-        "GhiChu" TEXT
+      CREATE TABLE IF NOT EXISTS giao_dich_xuat_kho (
+        id SERIAL PRIMARY KEY,
+        sophieu VARCHAR(100),
+        mavattu VARCHAR(100),
+        mancc VARCHAR(100),
+        tenvattu VARCHAR(255),
+        soluong INTEGER,
+        nguoithuchien VARCHAR(100),
+        ngaygiaodich TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        loaigiaodich VARCHAR(50),
+        ghichu TEXT
       );
     `);
     
-    // Tạo bảng LOG_NGHIEP_VU
+    // Tạo bảng log_nghiep_vu
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS "LOG_NGHIEP_VU" (
-        "ID" SERIAL PRIMARY KEY,
-        "Loai" VARCHAR(50),
-        "NoiDung" TEXT,
-        "ThoiGian" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      CREATE TABLE IF NOT EXISTS log_nghiep_vu (
+        id SERIAL PRIMARY KEY,
+        loai VARCHAR(50),
+        noidung TEXT,
+        thoigian TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     
     // Tạo indexes
     await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_kho_sscode_vendor ON "KHO"("SS_Code", "Vendor_code");
-      CREATE INDEX IF NOT EXISTS idx_kho_sscode ON "KHO"("SS_Code");
-      CREATE INDEX IF NOT EXISTS idx_bin_vi_tri_rack_bin ON "BIN_VI_TRI"("Rack", "Bin");
-      CREATE INDEX IF NOT EXISTS idx_gd_nhap_ngay ON "GIAO_DICH_NHAP_KHO"("NgayGiaoDich");
-      CREATE INDEX IF NOT EXISTS idx_gd_xuat_ngay ON "GIAO_DICH_XUAT_KHO"("NgayGiaoDich");
+      CREATE INDEX IF NOT EXISTS idx_kho_sscode_vendor ON kho(ss_code, vendor_code);
+      CREATE INDEX IF NOT EXISTS idx_kho_sscode ON kho(ss_code);
+      CREATE INDEX IF NOT EXISTS idx_bin_vi_tri_rack_bin ON bin_vi_tri(rack, bin);
+      CREATE INDEX IF NOT EXISTS idx_gd_nhap_ngay ON giao_dich_nhap_kho(ngaygiaodich);
+      CREATE INDEX IF NOT EXISTS idx_gd_xuat_ngay ON giao_dich_xuat_kho(ngaygiaodich);
     `);
     
     console.log('✅ Database schema initialized successfully');
