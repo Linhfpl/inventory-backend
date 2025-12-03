@@ -3,7 +3,7 @@ import express from 'express';
 import PheDuyet from '../mo_hinh/phe_duyet.js';
 const router = express.Router();
 let dsPheDuyet = [];
-import { getDb } from '../ket_noi_postgres.js';
+import { getDb } from '../ket_noi_sqlite.js';
 import axios from 'axios';
 
 // Middleware kiểm tra RBAC

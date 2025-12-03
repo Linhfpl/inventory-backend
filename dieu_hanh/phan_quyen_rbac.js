@@ -1,7 +1,7 @@
 // File: dieu_hanh/phan_quyen_rbac.js
 // API kiểm tra phân quyền RBAC cho người dùng
 import express from 'express';
-import { getDb } from '../ket_noi_postgres.js';
+import { getDb } from '../ket_noi_sqlite.js';
 const router = express.Router();
 
 // Kiểm tra quyền thực hiện hành động

@@ -2,7 +2,7 @@
 // Mô tả: API báo cáo xuất nhập kho theo loại giao dịch
 
 import express from 'express';
-import { getDb } from '../ket_noi_postgres.js';
+import { getDb } from '../ket_noi_sqlite.js';
 const router = express.Router();
 
 // API: Báo cáo giao dịch nhập kho theo loại

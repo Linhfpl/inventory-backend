@@ -1,6 +1,6 @@
 // File: backend/dieu_hanh/serial_detail.js
 import express from 'express';
-import { getDb } from '../ket_noi_postgres.js';
+import { getDb } from '../ket_noi_sqlite.js';
 const router = express.Router();
 
 // API: Truy vấn thông tin Serial_ID

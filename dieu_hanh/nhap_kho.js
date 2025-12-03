@@ -2,7 +2,7 @@ import express from 'express';
 import NhapKho from '../mo_hinh/nhap_kho.js';
 import dsNhapKho from '../du_lieu_mau/vat_tu_data.js';
 import axios from 'axios';
-import { getDb } from '../ket_noi_postgres.js';
+import { getDb } from '../ket_noi_sqlite.js';
 
 const router = express.Router();
 

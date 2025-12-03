@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDb } from '../ket_noi_postgres.js';
+import { getDb } from '../ket_noi_sqlite.js';
 import axios from 'axios';
 const router = express.Router();
 
