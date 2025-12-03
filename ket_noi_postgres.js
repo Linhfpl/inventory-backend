@@ -2,28 +2,27 @@
 // Mô tả: Kết nối tới PostgreSQL (Supabase)
 
 import pg from 'pg';
-import { parse } from 'pg-connection-string';
 const { Pool } = pg;
 
 let pool = null;
 
 function getPool() {
   if (!pool) {
-    const connectionString = process.env.DATABASE_URL;
+    let connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error('DATABASE_URL environment variable is not set');
     
-    console.log('🔗 Parsing DATABASE_URL...');
+    // Normalize postgresql:// to postgres:// if needed
+    if (connectionString.startsWith('postgresql://')) {
+      connectionString = connectionString.replace('postgresql://', 'postgres://');
+    }
     
-    // Use pg-connection-string to parse (handles all Postgres URL variants)
-    const config = parse(connectionString);
+    console.log('🔗 Creating PostgreSQL pool...');
     
     pool = new Pool({
-      ...config,
-      ssl: config.ssl || { rejectUnauthorized: false },
-      application_name: 'inventory-backend',
-      max: 10,
-      connectionTimeoutMillis: 10000,
-      idleTimeoutMillis: 30000
+      connectionString,
+      ssl: {
+        rejectUnauthorized: false
+      }
     });
     
     console.log('✅ PostgreSQL pool created');
