@@ -11,50 +11,46 @@ function getPool() {
     let connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error('DATABASE_URL environment variable is not set');
     
-    // Normalize and strip query params
-    if (connectionString.startsWith('postgresql://')) {
-      connectionString = connectionString.replace('postgresql://', 'postgres://');
-    }
+    // Strip query params
     const qIndex = connectionString.indexOf('?');
     if (qIndex > 0) {
       connectionString = connectionString.substring(0, qIndex);
     }
     
-    console.log('🔗 Parsing connection string manually...');
-    console.log('URL to parse:', connectionString.substring(0, 80));
+    // Normalize scheme
+    connectionString = connectionString.replace('postgresql://', 'postgres://');
     
-    // Manual parse: postgres://user:pass@host:port/db
-    const withoutScheme = connectionString.replace(/^postgres:\/\//, '');
-    const atIndex = withoutScheme.indexOf('@');
-    if (atIndex === -1) throw new Error('Invalid URL: missing @');
+    // Parse: postgres://user:pass@host:port/db or postgres://user:pass@host/db
+    const schemeEnd = connectionString.indexOf('://') + 3;
+    const rest = connectionString.substring(schemeEnd);
     
-    const auth = withoutScheme.substring(0, atIndex);
-    const hostAndDb = withoutScheme.substring(atIndex + 1);
+    const atIndex = rest.lastIndexOf('@'); // Use lastIndexOf in case @ in password
+    if (atIndex === -1) throw new Error('Invalid DATABASE_URL: missing @');
+    
+    const auth = rest.substring(0, atIndex);
+    const hostAndDb = rest.substring(atIndex + 1);
     
     const colonIndex = auth.indexOf(':');
-    if (colonIndex === -1) throw new Error('Invalid URL: missing : in auth');
+    if (colonIndex === -1) throw new Error('Invalid DATABASE_URL: missing :');
+    
     const user = auth.substring(0, colonIndex);
     const password = auth.substring(colonIndex + 1);
     
     const slashIndex = hostAndDb.indexOf('/');
-    if (slashIndex === -1) throw new Error('Invalid URL: missing / before database');
+    if (slashIndex === -1) throw new Error('Invalid DATABASE_URL: missing /');
+    
     const hostPart = hostAndDb.substring(0, slashIndex);
     const database = hostAndDb.substring(slashIndex + 1);
     
-    // Check if port exists in hostPart
     let host = hostPart;
     let port = 5432;
     const lastColonIndex = hostPart.lastIndexOf(':');
-    // Only treat as port if colon exists and what follows is a number
-    if (lastColonIndex > 0) {
-      const maybePort = hostPart.substring(lastColonIndex + 1);
-      if (/^\d+$/.test(maybePort)) {
-        host = hostPart.substring(0, lastColonIndex);
-        port = Number(maybePort);
-      }
+    if (lastColonIndex > 0 && /^\d+$/.test(hostPart.substring(lastColonIndex + 1))) {
+      host = hostPart.substring(0, lastColonIndex);
+      port = Number(hostPart.substring(lastColonIndex + 1));
     }
     
-    console.log('✅ Parsed:', { user, host, port, database });
+    console.log('✅ Connecting to:', host, 'port:', port, 'db:', database);
     
     pool = new Pool({
       host,
@@ -62,9 +58,7 @@ function getPool() {
       user,
       password,
       database,
-      ssl: {
-        rejectUnauthorized: false
-      }
+      ssl: { rejectUnauthorized: false }
     });
     
     console.log('✅ PostgreSQL pool created');
