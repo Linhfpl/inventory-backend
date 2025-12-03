@@ -28,7 +28,7 @@ function logCharCodes(label, str) {
 
 function getPool() {
   if (!pool) {
-    let raw = process.env.DATABASE_URL;
+    const raw = process.env.DATABASE_URL;
     if (!raw) throw new Error('DATABASE_URL environment variable is not set');
     console.log('🔗 Raw env length:', raw.length);
     console.log('🔗 Raw starts:', raw.substring(0, 40));
@@ -38,30 +38,16 @@ function getPool() {
     console.log('🔗 Normalized starts:', connectionString.substring(0, 40));
     logCharCodes('NORM', connectionString.substring(0, 60));
 
-    // Manual parse after normalization
-    let url;
-    try {
-      url = new URL(connectionString);
-    } catch (e) {
-      console.error('❌ URL parse failed:', e, 'value:', connectionString);
-      throw e;
-    }
-    console.log('🔍 Parsed host:', url.hostname, 'database path:', url.pathname);
-    console.log('🔍 Parsed user:', url.username, 'password length:', url.password.length);
-
+    // Use connectionString directly with pg.Pool to support query params
     pool = new Pool({
-      host: url.hostname,
-      port: url.port ? Number(url.port) : 5432,
-      user: decodeURIComponent(url.username),
-      password: decodeURIComponent(url.password),
-      database: url.pathname.slice(1),
+      connectionString,
       ssl: { rejectUnauthorized: false },
       application_name: 'inventory-backend',
       max: 10,
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000
     });
-    console.log('✅ PostgreSQL pool created (manual config)');
+    console.log('✅ PostgreSQL pool created (connectionString mode)');
   }
   return pool;
 }
