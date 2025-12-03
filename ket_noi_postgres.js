@@ -9,7 +9,10 @@ let pool = null;
 function getPool() {
   if (!pool) {
     let connectionString = process.env.DATABASE_URL;
-    if (!connectionString) throw new Error('DATABASE_URL environment variable is not set');
+    if (!connectionString) {
+      console.warn('⚠️ DATABASE_URL not set, returning null (will use SQLite fallback)');
+      return null;
+    }
     
     connectionString = connectionString.trim();
     
@@ -88,6 +91,11 @@ function getPool() {
 // Helper để map từ SQLite sang PostgreSQL
 export async function getDb() {
   const pool = getPool();
+  
+  // If no DATABASE_URL, return null to trigger SQLite fallback
+  if (!pool) {
+    return null;
+  }
   
   // Khởi tạo schema nếu chưa có
   await initSchema(pool);
