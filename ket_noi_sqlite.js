@@ -16,9 +16,21 @@ if (usePostgres) {
   console.log('🐘 Using PostgreSQL database');
   // Import PostgreSQL connector dynamically
   const pgModule = await import('./ket_noi_postgres.js');
-  getDbFunction = pgModule.getDb;
+  getDbFunction = async () => {
+    const pgDb = await pgModule.getDb();
+    // If Postgres returns null (no DATABASE_URL), fall back to SQLite
+    if (!pgDb) {
+      console.log('📦 Postgres returned null, falling back to SQLite');
+      return await getSqliteDb();
+    }
+    return pgDb;
+  };
 } else {
   console.log('📦 Using SQLite database');
+  getDbFunction = getSqliteDb;
+}
+
+async function getSqliteDb() {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Prefer DATABASE_URL env (e.g. file:./data/database.sqlite?mode=rwc), fallback to local BD.db
@@ -233,7 +245,7 @@ async function ensureIndexes(db) {
   indexesInitialized = true;
 }
 
-  getDbFunction = async function() {
+async function getSqliteDb() {
     const db = await open({
       filename: dbPath,
       driver: sqlite3.Database
@@ -255,7 +267,7 @@ async function ensureIndexes(db) {
       }
     }
     return db;
-  };
+  }
 }
 
 // Export the getDb function
