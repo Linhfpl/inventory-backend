@@ -119,12 +119,6 @@ async function initSchema(pool) {
   try {
     console.log('🔧 Initializing database schema...');
     
-    // Drop old uppercase tables if they exist (one-time migration)
-    await pool.query(`
-      DROP TABLE IF EXISTS "KHO", "BIN_VI_TRI", "GIAO_DICH_NHAP_KHO", "GIAO_DICH_XUAT_KHO", "LOG_NGHIEP_VU" CASCADE;
-    `);
-    console.log('🗑️ Dropped old uppercase tables');
-    
     // Kiểm tra xem bảng kho đã tồn tại chưa (lowercase)
     const tableCheck = await pool.query(`
       SELECT EXISTS (
