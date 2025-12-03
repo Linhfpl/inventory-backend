@@ -27,7 +27,7 @@ async function checkRBAC(req, res, next) {
 // API: Lấy danh sách phiếu xuất kho
 router.get('/', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_postgres.js');
+    const { getDb } = await import('../ket_noi_sqlite.js');
     const db = await getDb();
     const rows = await db.all('SELECT * FROM GIAO_DICH_XUAT_KHO ORDER BY NgayGiaoDich DESC');
     res.json(rows);
@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
 // API: Lịch sử xuất kho (giới hạn bản ghi gần nhất)
 router.get('/lich-su', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_postgres.js');
+    const { getDb } = await import('../ket_noi_sqlite.js');
     const db = await getDb();
     const rows = await db.all('SELECT * FROM GIAO_DICH_XUAT_KHO ORDER BY NgayGiaoDich DESC LIMIT 50');
     res.json(rows);
@@ -80,7 +80,7 @@ router.post('/ghi-nhan', checkRBAC, async (req, res) => {
       khu_vuc_nhan,
       ghi_chu
     } = req.body;
-    const db = await (await import('../ket_noi_postgres.js')).getDb();
+    const db = await (await import('../ket_noi_sqlite.js')).getDb();
     // Lấy tồn kho hiện tại
     const row = await db.get('SELECT * FROM KHO WHERE SS_Code = ? AND Vendor_code = ?', [ma_vat_tu, vendor_code]);
     if (!row) {
@@ -226,7 +226,7 @@ router.post('/ghi-nhan', checkRBAC, async (req, res) => {
   } catch (err) {
     // Log lỗi chi tiết
     try {
-      const db = await (await import('../ket_noi_postgres.js')).getDb();
+      const db = await (await import('../ket_noi_sqlite.js')).getDb();
       await db.run('INSERT INTO LOG_NGHIEP_VU (Loai, NoiDung, ThoiGian) VALUES (?, ?, CURRENT_TIMESTAMP)', ['XUAT_KHO', `Lỗi ghi nhận xuất kho: ${err.message}`]);
     } catch {}
     res.status(500).json({ error: 'Lỗi ghi nhận xuất kho', details: err.message });

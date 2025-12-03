@@ -10,7 +10,7 @@ let dsViTriKho = [];
 // API: Lấy danh sách vị trí kho
 router.get('/', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_postgres.js');
+    const { getDb } = await import('../ket_noi_sqlite.js');
     const db = await getDb();
     const rows = await db.all('SELECT * FROM BIN_VI_TRI');
     res.json(rows);
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 // API: Lấy danh sách bin code có thể dùng để nhập kho
 router.get('/available-bins', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_postgres.js');
+    const { getDb } = await import('../ket_noi_sqlite.js');
     const db = await getDb();
     // Lấy tất cả bin, sắp xếp theo Rack, Bin
     const rows = await db.all(`
@@ -40,7 +40,7 @@ router.get('/available-bins', async (req, res) => {
 // API: Thêm mới vị trí kho
 router.post('/', async (req, res) => {
   try {
-    const { getDb } = await import('../ket_noi_postgres.js');
+    const { getDb } = await import('../ket_noi_sqlite.js');
     const db = await getDb();
     const keys = Object.keys(req.body);
     const values = keys.map(k => req.body[k]);

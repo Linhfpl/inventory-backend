@@ -2,7 +2,7 @@
 import 'dotenv/config';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
-import { getDb } from './ket_noi_postgres.js';
+import { getDb } from './ket_noi_sqlite.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
