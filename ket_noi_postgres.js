@@ -13,6 +13,13 @@ function getPool() {
     
     connectionString = connectionString.trim();
     
+    // Try to decode if URL encoded
+    try {
+      connectionString = decodeURIComponent(connectionString);
+    } catch (e) {
+      // Already decoded
+    }
+    
     // Strip query params
     const qIndex = connectionString.indexOf('?');
     if (qIndex > 0) {
@@ -24,8 +31,8 @@ function getPool() {
     
     console.log('🔗 DATABASE_URL length:', connectionString.length);
     console.log('🔗 Has @?', connectionString.includes('@'));
-    console.log('🔗 First 50 chars:', connectionString.substring(0, 50));
-    console.log('🔗 Last 50 chars:', connectionString.substring(connectionString.length - 50));
+    console.log('🔗 @ index:', connectionString.indexOf('@'));
+    console.log('🔗 Full URL:', connectionString);
     
     // Parse: postgres://user:pass@host:port/db
     const schemeEnd = connectionString.indexOf('://') + 3;
@@ -33,8 +40,10 @@ function getPool() {
     
     const atIndex = rest.lastIndexOf('@');
     if (atIndex === -1) {
-      console.error('❌ Full URL:', connectionString);
-      throw new Error('Invalid DATABASE_URL: missing @');
+      console.error('❌ Cannot parse URL - missing @ separator between auth and host');
+      console.error('❌ Please check DATABASE_URL in Render environment variables');
+      console.error('❌ Expected format: postgres://user:password@host:port/database');
+      throw new Error('Invalid DATABASE_URL format: missing @ separator');
     }
     
     const auth = rest.substring(0, atIndex);
