@@ -47,18 +47,29 @@ function getPool() {
     if (!raw) throw new Error('DATABASE_URL environment variable is not set');
     console.log('🔗 Raw env length:', raw.length);
     console.log('🔗 Raw starts:', raw.substring(0, 40));
-    logCharCodes('RAW', raw.substring(0, 60));
-    const connectionString = normalizeConnectionString(raw);
-    console.log('🔗 Normalized length:', connectionString.length);
-    console.log('🔗 Normalized starts:', connectionString.substring(0, 40));
-    logCharCodes('NORM', connectionString.substring(0, 60));
+    
+    // Strip all query params and normalize scheme
+    let clean = raw.trim();
+    if (clean.startsWith('postgresql://')) {
+      clean = 'postgres://' + clean.slice('postgresql://'.length);
+      console.log('🔁 Converted scheme postgresql:// -> postgres://');
+    }
+    // Remove everything after '?' to strip query params
+    const qIndex = clean.indexOf('?');
+    if (qIndex > 0) {
+      clean = clean.substring(0, qIndex);
+      console.log('🧹 Stripped query params');
+    }
+    
+    console.log('🔗 Clean URL length:', clean.length);
+    console.log('🔗 Clean URL starts:', clean.substring(0, 40));
 
-    // Parse URL manually to extract config; avoid pg-connection-string parse errors
+    // Parse URL manually to extract config
     let url;
     try {
-      url = new URL(connectionString);
+      url = new URL(clean);
     } catch (e) {
-      console.error('❌ URL parse failed:', e);
+      console.error('❌ URL parse failed:', e, 'input:', clean);
       throw e;
     }
 
