@@ -1,7 +1,7 @@
 // File: dieu_hanh/auth.js
 // API đăng nhập, đổi mật khẩu, quên mật khẩu (bỏ qua hash)
 import express from 'express';
-import { getDb } from '../ket_noi_postgres.js';
+import { getDb } from '../ket_noi_sqlite.js';
 const router = express.Router();
 
 // Đăng nhập
