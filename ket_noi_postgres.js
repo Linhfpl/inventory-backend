@@ -21,30 +21,40 @@ function getPool() {
     }
     
     console.log('🔗 Parsing connection string manually...');
+    console.log('URL to parse:', connectionString.substring(0, 80));
     
-    // Manual parse using indexOf/substring (most reliable)
+    // Manual parse: postgres://user:pass@host:port/db
     const withoutScheme = connectionString.replace(/^postgres:\/\//, '');
     const atIndex = withoutScheme.indexOf('@');
+    if (atIndex === -1) throw new Error('Invalid URL: missing @');
+    
     const auth = withoutScheme.substring(0, atIndex);
     const hostAndDb = withoutScheme.substring(atIndex + 1);
     
     const colonIndex = auth.indexOf(':');
+    if (colonIndex === -1) throw new Error('Invalid URL: missing : in auth');
     const user = auth.substring(0, colonIndex);
     const password = auth.substring(colonIndex + 1);
     
     const slashIndex = hostAndDb.indexOf('/');
+    if (slashIndex === -1) throw new Error('Invalid URL: missing / before database');
     const hostPart = hostAndDb.substring(0, slashIndex);
     const database = hostAndDb.substring(slashIndex + 1);
     
+    // Check if port exists in hostPart
     let host = hostPart;
     let port = 5432;
-    const portColonIndex = hostPart.lastIndexOf(':');
-    if (portColonIndex > 0) {
-      host = hostPart.substring(0, portColonIndex);
-      port = Number(hostPart.substring(portColonIndex + 1)) || 5432;
+    const lastColonIndex = hostPart.lastIndexOf(':');
+    // Only treat as port if colon exists and what follows is a number
+    if (lastColonIndex > 0) {
+      const maybePort = hostPart.substring(lastColonIndex + 1);
+      if (/^\d+$/.test(maybePort)) {
+        host = hostPart.substring(0, lastColonIndex);
+        port = Number(maybePort);
+      }
     }
     
-    console.log('✅ Parsed config: host=', host, 'port=', port, 'db=', database);
+    console.log('✅ Parsed:', { user, host, port, database });
     
     pool = new Pool({
       host,
