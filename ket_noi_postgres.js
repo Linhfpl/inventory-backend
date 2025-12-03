@@ -12,9 +12,24 @@ function normalizeConnectionString(raw) {
   if (trimmed.startsWith('postgresql://')) {
     const converted = 'postgres://' + trimmed.slice('postgresql://'.length);
     console.log('🔁 Converted scheme postgresql:// -> postgres://');
-    return converted;
+    // Strip problematic query params Neon/Render may append
+    return sanitizeParams(converted);
   }
-  return trimmed;
+  return sanitizeParams(trimmed);
+}
+
+function sanitizeParams(str) {
+  try {
+    // Remove channel_binding and sslmode params which pg may not expect
+    let out = str.replace(/([?&])channel_binding=[^&]*/g, '$1')
+                 .replace(/([?&])sslmode=[^&]*/g, '$1');
+    // Cleanup trailing '?' or '&' or '?&'
+    out = out.replace(/\?&/, '?');
+    out = out.replace(/[?&]$/, '');
+    return out;
+  } catch {
+    return str;
+  }
 }
 
 function logCharCodes(label, str) {
